@@ -13,7 +13,13 @@ namespace Haiku.Repainter
         {
             Logger.LogInfo("Repainter - Under Construction");
             UE.Camera.onPostRender += Repaint;
+            var rng = new Random();
+            kA = rng.NextDouble();
+            kB = rng.NextDouble();
+            Logger.LogInfo($"kA={kA}, kB={kB}");
         }
+
+        private double kA, kB;
 
         private void Repaint(UE.Camera cam)
         {
@@ -54,8 +60,14 @@ namespace Haiku.Repainter
             {
                 var p = pixels[i];
                 var y = .299 * p.r + .587 * p.g + .114 * p.b;
-                var yb = (byte)y;
-                pixels[i] = new(yb, yb, yb, p.a);
+                var pb = -.1687 * p.r - .3313 * p.g + .5 * p.b;
+                var pr = .5 * p.r - .4187 * p.g - .0813 * p.b;
+                var pb2 = kA * pb + (1 - kA) * pr;
+                var pr2 = kB * pb + (1 - kB) * pr;
+                var r2 = (byte)(y + 1.402 * pr2);
+                var g2 = (byte)(y - .34414 * pb2 - .71414 * pr2);
+                var b2 = (byte)(y + 1.772 * pb2);
+                pixels[i] = new(r2, g2, b2, p.a);
             }
             buf.Apply();
             UE.Graphics.CopyTexture(buf, target);
