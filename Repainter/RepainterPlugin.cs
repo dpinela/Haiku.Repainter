@@ -15,8 +15,8 @@ namespace Haiku.Repainter
             var rng = new Random();
             for (var i = 0; i < areaPalettes.Length; i++)
             {
-                areaPalettes[i] = new() {A = rng.NextDouble(), B = rng.NextDouble()};
-                Logger.LogInfo($"palette {i}: A={areaPalettes[i].A}, B={areaPalettes[i].B}");
+                areaPalettes[i] = new(rng);
+                Logger.LogInfo($"palette {i}: {areaPalettes[i]}");
             }
         }
 
@@ -127,15 +127,22 @@ namespace Haiku.Repainter
                 var y = .299 * p.r + .587 * p.g + .114 * p.b;
                 var pb = -.1687 * p.r - .3313 * p.g + .5 * p.b;
                 var pr = .5 * p.r - .4187 * p.g - .0813 * p.b;
-                var pb2 = pal.A * pb + (1 - pal.A) * pr;
-                var pr2 = pal.B * pb + (1 - pal.B) * pr;
-                var r2 = (byte)(y + 1.402 * pr2);
-                var g2 = (byte)(y - .34414 * pb2 - .71414 * pr2);
-                var b2 = (byte)(y + 1.772 * pb2);
+                var pb2 = pal.Xb * pb + pal.Xr * pr;
+                var pr2 = pal.Yb * pb + pal.Yr * pr;
+                var r2 = Clamp(y + 1.402 * pr2);
+                var g2 = Clamp(y - .34414 * pb2 - .71414 * pr2);
+                var b2 = Clamp(y + 1.772 * pb2);
                 pixels[i] = new(r2, g2, b2, p.a);
             }
             buf.Apply();
             UE.Graphics.CopyTexture(buf, target);
         }
+
+        private static byte Clamp(double x) => x switch
+        {
+            < 0 => 0,
+            > 255 => 255,
+            _ => (byte)x
+        };
     }
 }
