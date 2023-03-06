@@ -13,7 +13,7 @@ namespace Haiku.Repainter
     {
         public void Start()
         {
-            modSettings = new(Config);
+            modSettings = new(Config, ApplyPalette);
 
             UE.Camera.onPostRender += Repaint;
             // MAPI doesn't have a predefined hook for StartNewGame yet.
@@ -35,13 +35,7 @@ namespace Haiku.Repainter
             {
                 if (modSettings!.ApplyOnStart.Value)
                 {
-                    var seed = modSettings!.Seed.Value;
-                    if (seed == "")
-                    {
-                        // insert a random seed here
-                    }
-                    saveData = new(seed);
-                    areaPalettes = Palette.GenerateN(NumPaletteAreas, new(seed));
+                    ApplyPalette();
                 }
                 else
                 {
@@ -53,6 +47,17 @@ namespace Haiku.Repainter
             {
                 Logger.LogError(err.ToString());
             }
+        }
+
+        private void ApplyPalette()
+        {
+            var seed = modSettings!.Seed.Value;
+            if (seed == "")
+            {
+                seed = DateTime.Now.Ticks.ToString();
+            }
+            saveData = new(seed);
+            areaPalettes = Palette.GenerateN(NumPaletteAreas, new(seed));
         }
 
         private void LoadSaveData(On.PCSaveManager.orig_Load orig, PCSaveManager self, string filePath)

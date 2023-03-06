@@ -10,16 +10,11 @@ namespace Haiku.Repainter
 
         private const string MainGroup = "";
 
-        public Settings(BepConfig.ConfigFile config)
+        public Settings(BepConfig.ConfigFile config, Action applyPalette)
         {
             Seed = config.Bind(MainGroup, "Seed", "", "Seed for palette generation (blank for random seed)");
             ApplyOnStart = config.Bind(MainGroup, "Apply Palette on Game Start", false);
-            MAPI.ConfigManagerUtil.createButton(config, ApplyImmediately, MainGroup, "Apply Palette", "Generate and apply a palette now");
-        }
-
-        private void ApplyImmediately()
-        {
-            
+            MAPI.ConfigManagerUtil.createButton(config, applyPalette, MainGroup, "Apply Palette", "Generate and apply a palette now");
         }
     }
 }
