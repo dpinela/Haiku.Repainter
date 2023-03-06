@@ -1,5 +1,7 @@
 global using System;
 using Bep = BepInEx;
+using Reflection = System.Reflection;
+using MM = MonoMod.RuntimeDetour;
 using UE = UnityEngine;
 using USM = UnityEngine.SceneManagement;
 
@@ -11,12 +13,86 @@ namespace Haiku.Repainter
     {
         public void Start()
         {
+            modSettings = new(Config);
+
             UE.Camera.onPostRender += Repaint;
-            var rng = new Random();
-            for (var i = 0; i < areaPalettes.Length; i++)
+            // MAPI doesn't have a predefined hook for StartNewGame yet.
+            new MM.Hook(
+                typeof(MainMenuManager).GetMethod("StartNewGame", 
+                    Reflection.BindingFlags.Instance | Reflection.BindingFlags.Public),
+                ApplyPaletteOnStart);
+            On.PCSaveManager.Load += LoadSaveData;
+            On.PCSaveManager.Save += StoreSaveData;
+        }
+
+        private Settings? modSettings;
+        private SaveData? saveData;
+
+        private void ApplyPaletteOnStart(Action<MainMenuManager, string> orig, MainMenuManager self, string mode)
+        {
+            orig(self, mode);
+            try
             {
-                areaPalettes[i] = new(rng);
-                Logger.LogInfo($"palette {i}: {areaPalettes[i]}");
+                if (modSettings!.ApplyOnStart.Value)
+                {
+                    var seed = modSettings!.Seed.Value;
+                    if (seed == "")
+                    {
+                        // insert a random seed here
+                    }
+                    saveData = new(seed);
+                    areaPalettes = Palette.GenerateN(NumPaletteAreas, new(seed));
+                }
+                else
+                {
+                    saveData = null;
+                    areaPalettes = null;
+                }
+            }
+            catch (Exception err)
+            {
+                Logger.LogError(err.ToString());
+            }
+        }
+
+        private void LoadSaveData(On.PCSaveManager.orig_Load orig, PCSaveManager self, string filePath)
+        {
+            orig(self, filePath);
+            try
+            {
+                saveData = SaveData.Load(self.es3SaveFile);
+                if (saveData != null)
+                {
+                    if (saveData.Algorithm == 1)
+                    {
+                        areaPalettes = Palette.GenerateN(NumPaletteAreas, new(saveData.Seed));
+                    }
+                    else
+                    {
+                        Logger.LogError($"save file contains unknown palette algorithm {saveData.Algorithm}; ignoring palette data");
+                    }
+                }
+            }
+            catch (Exception err)
+            {
+                Logger.LogError(err.ToString());
+            }
+        }
+
+        private void StoreSaveData(On.PCSaveManager.orig_Save orig, PCSaveManager self, string filePath)
+        {
+            orig(self, filePath);
+            if (saveData == null)
+            {
+                return;
+            }
+            try
+            {
+                saveData.SaveTo(self.es3SaveFile);
+            }
+            catch (Exception err)
+            {
+                Logger.LogError(err.ToString());
             }
         }
 
@@ -36,7 +112,8 @@ namespace Haiku.Repainter
         // 11: Forgotten Ruins
         // 12: Traveling Town
         // 13: Mainframe Vault
-        private Palette[] areaPalettes = new Palette[14];
+        private const int NumPaletteAreas = 14;
+        private Palette[]? areaPalettes;
 
         // Scene 160 is the Sunken Wastes/Research Lab transition
         // Scene 153 is the Sunken Wastes/Forgotten Ruins transition
@@ -83,14 +160,14 @@ namespace Haiku.Repainter
 
         private void Repaint(UE.Camera cam)
         {
-            if (cam == UE.Camera.main)
+            if (cam == UE.Camera.main && areaPalettes != null)
             {
                 try
                 {
                     var area = CurrentPaletteArea();
                     if (area != -1)
                     {
-                        Recolor(cam.activeTexture, area);
+                        Recolor(cam.activeTexture, areaPalettes[area]);
                     }
                 }
                 catch (Exception err)
@@ -112,9 +189,8 @@ namespace Haiku.Repainter
             return buffer;
         }
 
-        private void Recolor(UE.RenderTexture target, int palArea)
+        private void Recolor(UE.RenderTexture target, Palette pal)
         {
-            var pal = areaPalettes[palArea];
             var buf = GetBuffer(target.width, target.height);
             var act = UE.RenderTexture.active;
             UE.RenderTexture.active = target;
@@ -123,6 +199,13 @@ namespace Haiku.Repainter
             var pixels = buf.GetRawTextureData<UE.Color32>();
             for (var i = 0; i < buf.width * buf.height; i++)
             {
+                // Convert to YCbCr space, change the colour parameters, then convert back to RGB.
+                // For more efficiency, we could precompute the following matrix
+                // and multiply it by (r, g, b):
+                // 
+                // .299-.237Yb+.701Yr ;  .587-.464Yb-.587Yr ;  .114+.701Yb-.114Yr
+                // .299+.058Xb-.17207Xr+.120Yb-.35707Yr ;  .587+.114Xb+.144Xr+.237Yb+.299Yr ;  .114-.17207Xb+.028Xr-.35707Yb+.058Yr
+                // .299-.299Xb+.886Xr ;  .587-.587Xb-.742Xr ;  .114+.886Xb-.144Yr
                 var p = pixels[i];
                 var y = .299 * p.r + .587 * p.g + .114 * p.b;
                 var pb = -.1687 * p.r - .3313 * p.g + .5 * p.b;

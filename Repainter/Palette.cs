@@ -7,16 +7,16 @@ namespace Haiku.Repainter
         public double Xb;
         public double Yb;
 
-        public Palette(Random rng)
+        public Palette(RNG rng)
         {
-            var angle = rng.NextDouble() * Math.PI * 2;
+            var angle = rng.NextFloat() * Math.PI * 2;
             var m = angle % (Math.PI / 2);
             var invdiag = m < Math.PI / 4 ? Math.Cos(m) : Math.Sin(m);
 
             var cos = Math.Cos(angle);
             var sin = Math.Sin(angle);
 
-            var flip = rng.Next(2) == 0 ? -1 : 1;
+            var flip = rng.NextBool() ? -1 : 1;
 
             Xr = cos * invdiag;
             Yr = sin * invdiag;
@@ -25,5 +25,15 @@ namespace Haiku.Repainter
         }
 
         public override String ToString() => $"{{Xr={Xr}, Yr={Yr}, Xb={Xb}, Yb={Yb}}}";
+
+        public static Palette[] GenerateN(int n, RNG rng)
+        {
+            var pals = new Palette[n];
+            for (var i = 0; i < n; i++)
+            {
+                pals[i] = new(rng);
+            }
+            return pals;
+        }
     }
 }
