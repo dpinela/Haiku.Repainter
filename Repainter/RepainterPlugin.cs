@@ -1,13 +1,11 @@
 global using System;
 using Bep = BepInEx;
-using Reflection = System.Reflection;
-using MM = MonoMod.RuntimeDetour;
 using UE = UnityEngine;
 using USM = UnityEngine.SceneManagement;
 
 namespace Haiku.Repainter
 {
-    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.0.0.0")]
+    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.0.1.0")]
     [Bep.BepInDependency("haiku.mapi", "1.0")]
     public class RepainterPlugin : Bep.BaseUnityPlugin
     {
@@ -16,38 +14,12 @@ namespace Haiku.Repainter
             modSettings = new(Config, ApplyPalette);
 
             UE.Camera.onPostRender += Repaint;
-            // MAPI doesn't have a predefined hook for StartNewGame yet.
-            new MM.Hook(
-                typeof(MainMenuManager).GetMethod("StartNewGame", 
-                    Reflection.BindingFlags.Instance | Reflection.BindingFlags.Public),
-                ApplyPaletteOnStart);
             On.PCSaveManager.Load += LoadSaveData;
             On.PCSaveManager.Save += StoreSaveData;
         }
 
         private Settings? modSettings;
         private SaveData? saveData;
-
-        private void ApplyPaletteOnStart(Action<MainMenuManager, string> orig, MainMenuManager self, string mode)
-        {
-            orig(self, mode);
-            try
-            {
-                if (modSettings!.ApplyOnStart.Value)
-                {
-                    ApplyPalette();
-                }
-                else
-                {
-                    saveData = null;
-                    areaPalettes = null;
-                }
-            }
-            catch (Exception err)
-            {
-                Logger.LogError(err.ToString());
-            }
-        }
 
         private void ApplyPalette()
         {
@@ -65,17 +37,36 @@ namespace Haiku.Repainter
             orig(self, filePath);
             try
             {
-                saveData = SaveData.Load(self.es3SaveFile);
-                if (saveData != null)
+                // If introPlayed is true, we are loading an existing save file;
+                // otherwise, we are creating a fresh new one
+                if (GameManager.instance.introPlayed)
                 {
-                    if (saveData.Algorithm == 1)
+                    saveData = SaveData.Load(self.es3SaveFile);
+                    if (saveData != null)
                     {
-                        areaPalettes = Palette.GenerateN(NumPaletteAreas, new(saveData.Seed));
+                        Logger.LogInfo($"Loading savedata with seed {saveData.Seed}");
+                        if (saveData.Algorithm == 1)
+                        {
+                            areaPalettes = Palette.GenerateN(NumPaletteAreas, new(saveData.Seed));
+                        }
+                        else
+                        {
+                            Logger.LogError($"save file contains unknown palette algorithm {saveData.Algorithm}; ignoring palette data");
+                        }
                     }
                     else
                     {
-                        Logger.LogError($"save file contains unknown palette algorithm {saveData.Algorithm}; ignoring palette data");
+                        areaPalettes = null;
                     }
+                }
+                else if (modSettings!.ApplyOnStart.Value)
+                {
+                    ApplyPalette();
+                }
+                else
+                {
+                    saveData = null;
+                    areaPalettes = null;
                 }
             }
             catch (Exception err)
@@ -89,10 +80,12 @@ namespace Haiku.Repainter
             orig(self, filePath);
             if (saveData == null)
             {
+                Logger.LogInfo("Saving no savedata");
                 return;
             }
             try
             {
+                Logger.LogInfo($"Saving savedata with seed {saveData.Seed}");
                 saveData.SaveTo(self.es3SaveFile);
             }
             catch (Exception err)

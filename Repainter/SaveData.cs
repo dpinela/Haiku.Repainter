@@ -31,6 +31,7 @@ namespace Haiku.Repainter
         {
             saveFile.Save(algorithmKey, currentAlgorithm);
             saveFile.Save(seedKey, Seed);
+            saveFile.Sync();
         }
     }
 }
