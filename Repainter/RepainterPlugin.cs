@@ -1,4 +1,5 @@
 global using System;
+using CompilerServices = System.Runtime.CompilerServices;
 using Bep = BepInEx;
 using UE = UnityEngine;
 using USM = UnityEngine.SceneManagement;
@@ -219,6 +220,7 @@ namespace Haiku.Repainter
             UE.Graphics.CopyTexture(buf, target);
         }
 
+        [CompilerServices.MethodImpl(CompilerServices.MethodImplOptions.AggressiveInlining)]
         private static byte Clamp(double x) => x switch
         {
             < 0 => 0,
