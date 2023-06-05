@@ -6,7 +6,7 @@ using USM = UnityEngine.SceneManagement;
 
 namespace Haiku.Repainter
 {
-    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.0.1.0")]
+    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.0.2.0")]
     [Bep.BepInDependency("haiku.mapi", "1.0")]
     public class RepainterPlugin : Bep.BaseUnityPlugin
     {
