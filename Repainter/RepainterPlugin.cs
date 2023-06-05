@@ -111,7 +111,8 @@ namespace Haiku.Repainter
         // 11: Forgotten Ruins
         // 12: Traveling Town
         // 13: Mainframe Vault
-        private const int NumPaletteAreas = 14;
+        // 14: Old Arcadia
+        private const int NumPaletteAreas = 15;
         private Palette[]? areaPalettes;
 
         // Scene 160 is the Sunken Wastes/Research Lab transition
@@ -143,7 +144,11 @@ namespace Haiku.Repainter
             /* 200 */ 8,  3,  4,  3,  3,  13, 10, 10, 10, 10,
             /* 210 */ 10, 11, 7,  8,  8,  8,  8,  8,  8,  -1,
             /* 220 */ 4,  7,  3,  10, 9,  11, -1, 11, 4,  7,
-            /* 230 */ 7,  7,  8,  7
+            /* 230 */ 7,  7,  8,  7,  3,  -1, -1, -1, -1, -1,
+            /* 240 */ -1, -1, -1, -1, -1, -1, 14, 14, 14, 14,
+            /* 250 */ 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+            /* 260 */ 0,  -1, -1, -1, -1, -1, -1, -1, -1, 14,
+            /* 270 */ 14, 14
         };
 
         private static int CurrentPaletteArea()
