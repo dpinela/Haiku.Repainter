@@ -6,7 +6,7 @@ using USM = UnityEngine.SceneManagement;
 
 namespace Haiku.Repainter
 {
-    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.0.2.0")]
+    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.1.0.0")]
     [Bep.BepInDependency("haiku.mapi", "1.0")]
     public class RepainterPlugin : Bep.BaseUnityPlugin
     {
@@ -151,7 +151,7 @@ namespace Haiku.Repainter
             /* 270 */ 14, 14
         };
 
-        private static int CurrentPaletteArea()
+        private int CurrentPaletteArea()
         {
             var s = USM.SceneManager.GetActiveScene();
             if (s == null)
@@ -159,8 +159,15 @@ namespace Haiku.Repainter
                 return -1;
             }
             var n = s.buildIndex;
+            if (modSettings!.DisableInCreatorRooms.Value && IsCreatorRoom(n))
+            {
+                return -1;
+            }
             return n < paletteAreasByScene.Length ? paletteAreasByScene[n] : -1;
         }
+
+        private static bool IsCreatorRoom(int n) =>
+            n == 84 || n == 200 || n == 201 || n == 205;
 
         private void Repaint(UE.Camera cam)
         {

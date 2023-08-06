@@ -7,6 +7,7 @@ namespace Haiku.Repainter
     {
         public BepConfig.ConfigEntry<string> Seed;
         public BepConfig.ConfigEntry<bool> ApplyOnStart;
+        public BepConfig.ConfigEntry<bool> DisableInCreatorRooms;
 
         private const string MainGroup = "";
 
@@ -14,6 +15,7 @@ namespace Haiku.Repainter
         {
             Seed = config.Bind(MainGroup, "Seed", "", "Seed for palette generation (blank for random seed)");
             ApplyOnStart = config.Bind(MainGroup, "Apply Palette on Game Start", false);
+            DisableInCreatorRooms = config.Bind(MainGroup, "Disable in Creator Rooms", false);
             MAPI.ConfigManagerUtil.createButton(config, applyPalette, MainGroup, "Apply Palette", "Generate and apply a palette now");
         }
     }
