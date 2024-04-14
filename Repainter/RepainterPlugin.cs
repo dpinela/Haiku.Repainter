@@ -6,13 +6,13 @@ using USM = UnityEngine.SceneManagement;
 
 namespace Haiku.Repainter
 {
-    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.1.0.0")]
+    [Bep.BepInPlugin("haiku.repainter", "Haiku Repainter", "1.2.0.0")]
     [Bep.BepInDependency("haiku.mapi", "1.0")]
     public class RepainterPlugin : Bep.BaseUnityPlugin
     {
         public void Start()
         {
-            modSettings = new(Config, ApplyPalette);
+            modSettings = new(Config, ApplyPalette, CopySeed);
 
             UE.Camera.onPostRender += Repaint;
             On.PCSaveManager.Load += LoadSaveData;
@@ -33,6 +33,14 @@ namespace Haiku.Repainter
             areaPalettes = Palette.GenerateN(NumPaletteAreas, new(seed));
         }
 
+        private void CopySeed()
+        {
+            if (saveData != null)
+            {
+                UE.GUIUtility.systemCopyBuffer = saveData.Seed;
+            }
+        }
+
         private void LoadSaveData(On.PCSaveManager.orig_Load orig, PCSaveManager self, string filePath)
         {
             orig(self, filePath);
@@ -45,6 +53,7 @@ namespace Haiku.Repainter
                     saveData = SaveData.Load(self.es3SaveFile);
                     if (saveData != null)
                     {
+                        // TODO: add button to copy seed to clipboard
                         Logger.LogInfo($"Loading savedata with seed {saveData.Seed}");
                         if (saveData.Algorithm == 1)
                         {

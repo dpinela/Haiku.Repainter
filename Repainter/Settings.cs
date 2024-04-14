@@ -11,12 +11,13 @@ namespace Haiku.Repainter
 
         private const string MainGroup = "";
 
-        public Settings(BepConfig.ConfigFile config, Action applyPalette)
+        public Settings(BepConfig.ConfigFile config, Action applyPalette, Action copySeed)
         {
             Seed = config.Bind(MainGroup, "Seed", "", "Seed for palette generation (blank for random seed)");
             ApplyOnStart = config.Bind(MainGroup, "Apply Palette on Game Start", false);
             DisableInCreatorRooms = config.Bind(MainGroup, "Disable in Creator Rooms", false);
             MAPI.ConfigManagerUtil.createButton(config, applyPalette, MainGroup, "Apply Palette", "Generate and apply a palette now");
+            MAPI.ConfigManagerUtil.createButton(config, copySeed, MainGroup, "Copy Seed", "Copy the currently used seed to the clipboard");
         }
     }
 }
